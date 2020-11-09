@@ -27,7 +27,7 @@
 # openMHA, liblsl, liblsl-matlab, tascarpro, more may be added
 #
 # $BRANCH_NAME:
-# master, uploaded to apt.hoertech.de, and development, uploaded to
+# master or main: uploaded to apt.hoertech.de, and development, uploaded to
 # aptdev.hoertech.de. BRANCH_NAME is set by Jenkins
 #
 # SYSTEMs:
@@ -60,10 +60,10 @@ pruned-storage-%: updated-storage-%
 	@echo Storage pruning finished.
 	@echo nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
 
-# Never delete old packages in the master database
-pruned-storage-master: updated-storage-master
+# Never delete old packages in the release database
+pruned-storage-main: updated-storage-main
 	@echo uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
-	@echo "Keep all existing packages on branch master"
+	@echo "Keep all existing packages on branch main"
 	@echo nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
 
 # copy the $SYSTEM/packages.deb tree without overwriting existing package files.

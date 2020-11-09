@@ -50,7 +50,7 @@ pipeline {
         stage("artifacts") {
             agent {label "aptly"}
             // do not publish packages for any branches except these
-            when { anyOf { branch 'master'; branch 'development' } }
+            when { anyOf { branch 'main' } }
             steps {
                 // receive all deb packages from liblsl build
                 unstash "x86_64_focal"
