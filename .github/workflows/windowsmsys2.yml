@@ -1,0 +1,30 @@
+name: Windows make
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: msys2/setup-msys2@v2
+      with:
+        release: false
+    - name: Print system version
+      run: uname
+    - run: mkdir -p build
+    - run: cd build && cmake -G"MSYS Makefiles" ..
+    - run: |
+        cd build && make VERBOSE=1 || /mingw64/bin/g++.exe -O3 -DNDEBUG -shared -o liblsl.dll -Wl,--out-implib,liblsl.dll.a -Wl,--major-image-version,1,--minor-image-version,14 -Wl,--whole-archive CMakeFiles/lsl.dir/objects.a -Wl,--no-whole-archive  -lbcrypt -liphlpapi -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 -lwinmm -lmswsock -lws2_32
+    - name: make install
+      run: make -C build install
+    - name: upload install dir
+      uses: actions/upload-artifact@master
+      with:
+        name: liblsl-windows
+        path: build/install
