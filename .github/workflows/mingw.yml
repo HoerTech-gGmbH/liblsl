@@ -1,8 +1,4 @@
-# This file is derived from the github actions cppcmake file provided by SCCN.
-# Modifications were made to compile for MinGW
-# Modifications are annotated with comments.
-
-name: MinGW CI
+name: C/C++ CI
 
 on:
   push:
@@ -21,39 +17,34 @@ on:
 
 defaults:
   run:
-    # We use msys to compile with mingw
-    shell: msys2 {0}
+    shell: bash
 
 
 jobs:
   build:
     name: ${{ matrix.config.name }}
-    # cmake should not have make hide the commands
-    env:
-      VERBOSE: 1
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
         config:
-        # Removed all options covered by cppcmake.yml, replaced with MinGW target
-        - {name: "windows",  os: "windows-latest", cmake_extra: "-G'MSYS Makefiles'"}
+        - {name: "ubuntu-20.04", os: "ubuntu-20.04"}
+        - {name: "ubuntu-18.04", os: "ubuntu-18.04"}
+        - {name: "ubuntu-16.04", os: "ubuntu-16.04"}
+        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v140,host=x86"}
+        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v140,host=x86 -A Win32"}
+        - {name: "macOS-latest", os: "macOS-latest"}
     
     steps:
     - uses: actions/checkout@v2
-    # We use the preinstalled msys2 on the github actions windows runner.
-    - uses: msys2/setup-msys2@v2
-      with:
-        release: false
     - name: Configure CMake
-      # Turned off building of tests and examples:
       run: |
            cmake --version
            cmake -S . -B build \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX=${PWD}/install \
-                -DLSL_UNITTESTS=OFF \
-                -DLSL_BUILD_EXAMPLES=OFF \
+                -DLSL_UNITTESTS=ON \
+                -DLSL_BUILD_EXAMPLES=ON \
                 -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
                 -Dlslgitrevision=${{ github.sha }} \
                 -Dlslgitbranch=${{ github.ref }} \
@@ -95,9 +86,15 @@ jobs:
               ip route
               ip -6 route
            fi
-
-    # Unit tests removed.
-
+    
+    - name: unit tests (internal functions)
+      run: install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
+      timeout-minutes: 5
+    
+    - name: unit tests (exported functions)
+      run: install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
+      timeout-minutes: 5
+      if: ${{ success() || failure() }}
     - name: upload to release page
       if: github.event_name == 'release'
       env:

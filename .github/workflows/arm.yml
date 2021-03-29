@@ -1,8 +1,4 @@
-# This file is derived from the github actions cppcmake file provided by SCCN.
-# Modifications were made to compile for ARM.
-# Modifications are annotated with comments.
-
-name: ARM CI
+name: C/C++ CI
 
 on:
   push:
@@ -27,67 +23,49 @@ defaults:
 jobs:
   build:
     name: ${{ matrix.config.name }}
-    # Add environment variable in order to execute commands in correct container
-    # All following shell commands that need to be executed on a (simulated) ARM
-    # CPU are extended with a prefix $D so that they are executed on ARM.  The
-    # VERBOSE=1 because cmake should not have make hide the commands
-    env:
-      D: docker run --rm -i -v ${{github.workspace}}:${{github.workspace}} --env VERBOSE=1 --workdir ${{github.workspace}} tobiasherzke/docker-buildenv:liblsl_${{matrix.config.cpu}}-linux-gcc-7
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
         config:
-        # All SCCN targets are removed. Only compile for ARM CPUs.
-        - {name: "ubuntu-18.04", os: "ubuntu-18.04", cpu: "armv7"}
-        - {name: "ubuntu-18.04", os: "ubuntu-18.04", cpu: "aarch64"}
+        - {name: "ubuntu-20.04", os: "ubuntu-20.04"}
+        - {name: "ubuntu-18.04", os: "ubuntu-18.04"}
+        - {name: "ubuntu-16.04", os: "ubuntu-16.04"}
+        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v140,host=x86"}
+        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v140,host=x86 -A Win32"}
+        - {name: "macOS-latest", os: "macOS-latest"}
     
     steps:
     - uses: actions/checkout@v2
-    # Install qemu support for ARM CPUs and test execution in ARM container.
-    - name: Prepare to run commands in docker container for ARM CPU
-      run: |
-           uname -a
-           systemctl status binfmt-support || true
-           sudo apt-get -y update
-           sudo apt-get -y install qemu-user-static
-           git clone https://github.com/computermouth/qemu-static-conf.git
-           sudo mkdir -p /lib/binfmt.d
-           sudo cp qemu-static-conf/*.conf /lib/binfmt.d/
-           rm -rf qemu-static-conf
-           sudo systemctl restart systemd-binfmt.service
-           systemctl status binfmt-support
-           $D uname -a
     - name: Configure CMake
-      # Turned off building of tests and examples:
       run: |
-           $D cmake --version
-           $D cmake -S . -B build \
+           cmake --version
+           cmake -S . -B build \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX=${PWD}/install \
-                -DLSL_UNITTESTS=OFF \
-                -DLSL_BUILD_EXAMPLES=OFF \
+                -DLSL_UNITTESTS=ON \
+                -DLSL_BUILD_EXAMPLES=ON \
                 -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
                 -Dlslgitrevision=${{ github.sha }} \
                 -Dlslgitbranch=${{ github.ref }} \
                 ${{ matrix.config.cmake_extra }} 
     - name: make
-      run: $D cmake --build build --config Release -j --target install
+      run: cmake --build build --config Release -j --target install
   
     - name: package
       run: |
-           $D echo $GITHUB_REF
-           $D cmake --build build --config Release -j --target package
+           echo $GITHUB_REF
+           cmake --build build --config Release -j --target package
            # On Debian / Ubuntu the dependencies can only be resolved for
            # already installed packages. Therefore, we have built all
            # packages without dependencies in the previous step,
            # install them and rebuild them with dependency discovery enabled
            if [[ "${{ matrix.config.os }}" == ubuntu-* ]]; then
-              $D cmake -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON .
-              # following two commands must execute in same container instance
-              $D bash -c "dpkg -i package/*.deb && cmake --build build --config Release -j --target package"
+              cmake -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON .
+              sudo dpkg -i package/*.deb
+              cmake --build build --config Release -j --target package
            fi
-           $D cmake -E remove_directory package/_CPack_Packages
+           cmake -E remove_directory package/_CPack_Packages
     - name: upload install dir
       uses: actions/upload-artifact@master
       with:
@@ -99,9 +77,24 @@ jobs:
       with:
         name: pkg-${{ matrix.config.name }}
         path: package
-
-    # Unit tests and network config removed.
-
+    - name: print network config
+      run: |
+           which ifconfig && ifconfig
+           if [ `which ip` ]; then
+              ip link
+              ip addr
+              ip route
+              ip -6 route
+           fi
+    
+    - name: unit tests (internal functions)
+      run: install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
+      timeout-minutes: 5
+    
+    - name: unit tests (exported functions)
+      run: install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
+      timeout-minutes: 5
+      if: ${{ success() || failure() }}
     - name: upload to release page
       if: github.event_name == 'release'
       env:
