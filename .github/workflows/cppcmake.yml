@@ -15,29 +15,37 @@ on:
         required: false
         default: ''
 
-defaults:
-  run:
-    shell: bash
-
-
 jobs:
   build:
     name: ${{ matrix.config.name }}
+    # cmake should not have make hide the commands.  Why would anyone choose to?
+    env:
+      VERBOSE: 1
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
         config:
-        - {name: "ubuntu-20.04", os: "ubuntu-20.04"}
-        - {name: "ubuntu-18.04", os: "ubuntu-18.04"}
-        - {name: "ubuntu-16.04", os: "ubuntu-16.04"}
-        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v140,host=x86"}
-        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v140,host=x86 -A Win32"}
-        - {name: "macOS-latest", os: "macOS-latest"}
+        - {name: "ubuntu-20.04", shell: "bash",  os: "ubuntu-20.04"}
+        - {name: "ubuntu-18.04", shell: "bash",  os: "ubuntu-18.04"}
+        - {name: "ubuntu-16.04", shell: "bash",  os: "ubuntu-16.04"}
+        - {name: "windows-x64",  shell: "bash",  os: "windows-latest", cmake_extra: "-T v140,host=x86"}
+        - {name: "mingw64",      shell: "msys2", os: "windows-latest", cmake_extra: "-G'MSYS Makefiles'"}
+        - {name: "windows-32",   shell: "bash",  os: "windows-latest", cmake_extra: "-T v140,host=x86 -A Win32"}
+        - {name: "macOS-latest", shell: "bash",  os: "macOS-latest"}
     
+    defaults:
+      run:
+        shell: ${{matrix.config.shell}} {0}
     steps:
     - uses: actions/checkout@v2
+    # We use the preinstalled msys2 on the github actions windows runner.
+    - if: ${{matrix.config.shell == 'msys2'}}
+      uses: msys2/setup-msys2@v2
+      with:
+        release: false
     - name: Configure CMake
+      # Turned off building of tests and examples:
       run: |
            cmake --version
            cmake -S . -B build \
@@ -90,11 +98,12 @@ jobs:
     - name: unit tests (internal functions)
       run: install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 5
+      if: ${{matrix.config.shell != 'msys2'}}
     
     - name: unit tests (exported functions)
       run: install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 5
-      if: ${{ success() || failure() }}
+      if: ${{ (success() || failure()) &&  matrix.config.shell != 'msys2' }}
     - name: upload to release page
       if: github.event_name == 'release'
       env:
