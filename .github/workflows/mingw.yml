@@ -11,6 +11,8 @@
 # For each new release that we follow, we will replace our existing
 # branch "main" with a new branch "main" by force-pushing.  Old
 # releases can still be accessed later through their "-htch" tags.
+# Any changes done by upstream in the github actions file cppcmake.yml should
+# also be applied to our additional github actions files mingw.yml and arm.yml.
 #
 # In practive, roughly follow these steps when sccn publish a new release:
 #
@@ -19,7 +21,10 @@
 # git fetch git@github.com:sccn/liblsl
 # git fetch --tags git@github.com:sccn/liblsl
 # git checkout <new_upstram_release_tag>
-# git apply --index /tmp/diff.diff
+# git apply --index /tmp/diff.diff # Fix any conflicts before proceeding
+# git diff <last_upstream_release_tag> <new_upstram_release_tag> -- .github/workflows/cppcmake.yml >/tmp/diff2
+# patch .github/workflows/arm.yml </tmp/diff2 # Fix any conflicts before proceeding
+# patch .github/workflows/mingw.yml </tmp/diff2 # Fix any conflicts before proceeding
 # git commit -m "Add our build files"
 # git tag <new_upstream_release_tag>-htch # to find our modified release later
 # git checkout main
