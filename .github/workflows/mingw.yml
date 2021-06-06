@@ -1,6 +1,32 @@
 # This file is derived from the github actions cppcmake file provided by SCCN.
 # Modifications were made to compile for MinGW
 # Modifications are annotated with comments.
+#
+# Strategy for following upstream (sccn) development: We apply the
+# modifications that we did for this release to their next release,
+# while resolving any conflicts that may arise.  We will tag our
+# modifications with a tag that is the same as their release tag with
+# "-htch" or similar appended.  Sccn's main branch is named "master",
+# we name our main branch "main" as long as there is no name conflict.
+# For each new release that we follow, we will replace our existing
+# branch "main" with a new branch "main" by force-pushing.  Old
+# releases can still be accessed later through their "-htch" tags.
+#
+# In practive, roughly follow these steps when sccn publish a new release:
+#
+# Inside our repository, on branch "main":
+# git diff <last_upstream_release_tag> >/tmp/diff.diff
+# git fetch git@github.com:sccn/liblsl
+# git fetch --tags git@github.com:sccn/liblsl
+# git checkout <new_upstram_release_tag>
+# git apply --index /tmp/diff.diff
+# git commit -m "Add our build files"
+# git tag <new_upstream_release_tag>-htch # to find our modified release later
+# git checkout main
+# git reset --hard <new_upstream_release_tag>-htch # history modification!
+# git push --force
+# git push origin <new_upstram_release_tag>
+# git push origin <new_upstream_release_tag>-htch
 
 name: MinGW CI
 

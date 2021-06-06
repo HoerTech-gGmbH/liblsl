@@ -1,6 +1,8 @@
 # This file is derived from the github actions cppcmake file provided by SCCN.
 # Modifications were made to compile for ARM.
 # Modifications are annotated with comments.
+#
+# See comments in file mingw.yml about following upstream (sccn) develoment.
 
 name: ARM CI
 
