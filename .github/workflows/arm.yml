@@ -40,9 +40,10 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        # All SCCN targets are removed. Only compile for ARM CPUs.
+        # All SCCN targets are removed. Only compile for 18.04 on ARM and PC CPUs.
         - {name: "ubuntu-18.04", os: "ubuntu-18.04", cpu: "armv7"}
         - {name: "ubuntu-18.04", os: "ubuntu-18.04", cpu: "aarch64"}
+        - {name: "ubuntu-18.04", os: "ubuntu-18.04", cpu: "x86_64"}
     
     steps:
     - uses: actions/checkout@v2
