@@ -4,7 +4,7 @@
 #
 # See comments in file mingw.yml about following upstream (sccn) develoment.
 
-name: ARM CI
+name: Ubuntu CI
 
 on:
   push:
@@ -34,7 +34,7 @@ jobs:
     # CPU are extended with a prefix $D so that they are executed on ARM.  The
     # VERBOSE=1 because cmake should not have make hide the commands
     env:
-      D: docker run --rm -i -v ${{github.workspace}}:${{github.workspace}} --env VERBOSE=1 --workdir ${{github.workspace}} tobiasherzke/docker-buildenv:liblsl_${{matrix.config.cpu}}-linux-gcc-7
+      D: docker run --rm -i -v ${{github.workspace}}:${{github.workspace}} --env VERBOSE=1 --workdir ${{github.workspace}} hoertech/docker-buildenv:liblsl_${{matrix.config.cpu}}-linux-gcc-7
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
